@@ -23,9 +23,24 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+
+  const classesCollection = client.db('summer-school').collection('classes')
+  const usersCollection = client.db('summer-school').collection('users')
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    app.get('/classes', async (req, res) => {
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    })
+
+
+    app.post('/users', async(req,res) =>{
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -38,10 +53,10 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send('summer school is running')
+  res.send('summer school is running')
 });
 
 
 app.listen(port, () => {
-    console.log(`summer school port is ${port}`);
+  console.log(`summer school port is ${port}`);
 })
