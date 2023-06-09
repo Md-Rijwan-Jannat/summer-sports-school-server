@@ -31,13 +31,28 @@ async function run() {
     await client.connect();
 
     app.get('/classes', async (req, res) => {
-      const result = await classesCollection.find().toArray();
+      const result = await classesCollection
+        .find()
+        .sort({ students: -1 })
+        .limit(6)
+        .toArray();
       res.send(result);
     })
 
     // users apis
+    app.get('/allUsers', async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
+
+
     app.patch('/users', async (req, res) => {
       const user = req.body;
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send('User Already exist')
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
     })
@@ -45,7 +60,19 @@ async function run() {
 
     app.get('/users/instructor', async (req, res) => {
       const query = { role: 'instructor' }
-      const result = await usersCollection.find(query).toArray();
+      const result = await usersCollection
+        .find(query)
+        .toArray();
+      res.send(result);
+    })
+
+
+    app.get('/users/popular/instructor', async (req, res) => {
+      const query = { role: 'instructor' }
+      const result = await usersCollection
+        .find(query)
+        .limit(6)
+        .toArray();
       res.send(result);
     })
     // Send a ping to confirm a successful connection
