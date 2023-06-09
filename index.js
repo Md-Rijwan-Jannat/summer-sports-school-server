@@ -26,6 +26,7 @@ async function run() {
 
   const classesCollection = client.db('summer-school').collection('classes')
   const usersCollection = client.db('summer-school').collection('users')
+  const feedbackCollection = client.db('summer-school').collection('feedback')
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -41,14 +42,14 @@ async function run() {
     })
 
 
-    app.post('/addClass', async(req,res) =>{
+    app.post('/addClass', async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
       res.send(result);
 
     })
 
-    app.patch('/classApprove/:id', async(req, res) =>{
+    app.patch('/classApprove/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updateAdmin = {
@@ -61,17 +62,30 @@ async function run() {
     })
 
 
+    app.patch('/classDenied/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateAdmin = {
+        $set: {
+          status: 'denied'
+        }
+      }
+      const result = await classesCollection.updateOne(filter, updateAdmin);
+      res.send(result);
+    })
+
+
     app.get('/allClasses', async (req, res) => {
       const result = await classesCollection
         .find()
-        .sort({ students: -1 })
+        .sort({ students: -1, _id: -1 })
         .toArray();
       res.send(result);
     })
 
 
     app.get('/allClasses/approved', async (req, res) => {
-      const approved = {status: 'approved'};
+      const approved = { status: 'approved' };
       const result = await classesCollection
         .find(approved)
         .sort({ students: -1 })
@@ -100,22 +114,9 @@ async function run() {
     })
 
 
-    app.patch('/user/instructor/:id', async (req, res) => {
+    app.delete('/users/delete/:id', async (req, res) => {
       const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const updateInstructor = {
-        $set: {
-          role: 'instructor'
-        }
-      }
-      const result = await usersCollection.updateOne(filter, updateInstructor);
-      res.send(result);
-    })
-
-
-    app.delete('/users/delete/:id', async(req,res) =>{
-      const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     })
@@ -129,6 +130,28 @@ async function run() {
         return res.send('User Already exist')
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+
+    // instructor apis
+    app.patch('/user/instructor/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateInstructor = {
+        $set: {
+          role: 'instructor'
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updateInstructor);
+      res.send(result);
+    })
+
+
+    app.get('/my_classes/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { instructorEmail: email };
+      const result = await classesCollection.find(query).toArray();
       res.send(result);
     })
 
@@ -148,6 +171,21 @@ async function run() {
         .find(query)
         .limit(6)
         .toArray();
+      res.send(result);
+    })
+
+
+    // admin apis
+    app.post('/feedback', async (req, res) => {
+      const feedback = req.body;
+      const result = await feedbackCollection.insertOne(feedback);
+      res.send(result);
+    })
+
+    app.get('/feedback_for_instructor/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { class_id: id };
+      const result = await feedbackCollection.find(query).toArray();
       res.send(result);
     })
     // Send a ping to confirm a successful connection
