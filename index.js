@@ -41,9 +41,39 @@ async function run() {
     })
 
 
+    app.post('/addClass', async(req,res) =>{
+      const newClass = req.body;
+      const result = await classesCollection.insertOne(newClass);
+      res.send(result);
+
+    })
+
+    app.patch('/classApprove/:id', async(req, res) =>{
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateAdmin = {
+        $set: {
+          status: 'approved'
+        }
+      }
+      const result = await classesCollection.updateOne(filter, updateAdmin);
+      res.send(result);
+    })
+
+
     app.get('/allClasses', async (req, res) => {
       const result = await classesCollection
         .find()
+        .sort({ students: -1 })
+        .toArray();
+      res.send(result);
+    })
+
+
+    app.get('/allClasses/approved', async (req, res) => {
+      const approved = {status: 'approved'};
+      const result = await classesCollection
+        .find(approved)
         .sort({ students: -1 })
         .toArray();
       res.send(result);
@@ -68,6 +98,8 @@ async function run() {
       const result = await usersCollection.updateOne(filter, updateAdmin);
       res.send(result);
     })
+
+
     app.patch('/user/instructor/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -81,7 +113,15 @@ async function run() {
     })
 
 
-    app.patch('/users', async (req, res) => {
+    app.delete('/users/delete/:id', async(req,res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    })
+
+
+    app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
       const existingUser = await usersCollection.findOne(query);
