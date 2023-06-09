@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
 require('dotenv').config()
@@ -30,6 +30,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // classes apis
     app.get('/classes', async (req, res) => {
       const result = await classesCollection
         .find()
@@ -39,9 +40,43 @@ async function run() {
       res.send(result);
     })
 
+
+    app.get('/allClasses', async (req, res) => {
+      const result = await classesCollection
+        .find()
+        .sort({ students: -1 })
+        .toArray();
+      res.send(result);
+    })
+
+
     // users apis
     app.get('/allUsers', async (req, res) => {
       const result = await usersCollection.find().toArray();
+      res.send(result);
+    })
+
+
+    app.patch('/user/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateAdmin = {
+        $set: {
+          role: 'admin'
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updateAdmin);
+      res.send(result);
+    })
+    app.patch('/user/instructor/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateInstructor = {
+        $set: {
+          role: 'instructor'
+        }
+      }
+      const result = await usersCollection.updateOne(filter, updateInstructor);
       res.send(result);
     })
 
