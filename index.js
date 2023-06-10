@@ -108,12 +108,31 @@ async function run() {
     })
 
 
-    app.post('/student/addToClass', async (req, res) => {
+    app.patch('/student/addToClass', async (req, res) => {
       const studentAddedClass = req.body;
       const result = await addToClassCollection.insertOne(studentAddedClass);
       res.send(result)
     })
 
+
+    app.get('/addedClass', async (req, res) => {
+      const email = req.query.email;
+      console.log(email);
+      if (!email) {
+        res.send([])
+      }
+      const query = { studentEmail: email };
+      const result = await addToClassCollection.find(query).toArray();
+      res.send(result);
+    })
+
+
+    app.delete('/addedClass/delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await addToClassCollection.deleteOne(query);
+      res.send(result)
+    })
 
     // classes apis
     app.get('/classes', async (req, res) => {
@@ -193,19 +212,6 @@ async function run() {
     })
 
 
-    app.get('/users/instructor/:email', verifyJWT, verifyInstructor, async (req, res) => {
-      const email = req.params.email;
-
-      if (req.decoded.email !== email) {
-        res.send({ instructor: false })
-      }
-
-      const query = { email: email }
-      const user = await usersCollection.findOne(query);
-      const result = { instructor: user?.role === 'instructor' }
-      res.send(result);
-    })
-
 
     app.get('/my_classes/:email', async (req, res) => {
       const email = req.params.email;
@@ -215,7 +221,7 @@ async function run() {
     })
 
 
-    app.get('/users/instructor', verifyJWT, async (req, res) => {
+    app.get('/users/instructor', async (req, res) => {
       const query = { role: 'instructor' }
       const result = await usersCollection
         .find(query)
@@ -234,7 +240,36 @@ async function run() {
     })
 
 
+    app.get('/single/instructor/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false })
+      }
+
+      else {
+        const query = { email: email }
+        const user = await usersCollection.findOne(query);
+        const result = { instructor: user?.role === 'instructor' }
+        res.send(result);
+      }
+    })
+
     // admin apis
+    app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false })
+      }
+
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      const result = { admin: user?.role === 'admin' }
+      res.send(result);
+    })
+
+
     app.post('/feedback', async (req, res) => {
       const feedback = req.body;
       const result = await feedbackCollection.insertOne(feedback);
@@ -249,18 +284,7 @@ async function run() {
     })
 
 
-    app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
-      const email = req.params.email;
 
-      if (req.decoded.email !== email) {
-        res.send({ admin: false })
-      }
-
-      const query = { email: email }
-      const user = await usersCollection.findOne(query);
-      const result = { admin: user?.role === 'admin' }
-      res.send(result);
-    })
 
 
 
