@@ -10,6 +10,24 @@ app.use(cors());
 app.use(express.json());
 
 
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access' });
+  }
+  // bearer token
+  const token = authorization.split(' ')[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' })
+    }
+    req.decoded = decoded;
+    next();
+  })
+}
+
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fiopcal.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -27,6 +45,7 @@ async function run() {
   const classesCollection = client.db('summer-school').collection('classes')
   const usersCollection = client.db('summer-school').collection('users')
   const feedbackCollection = client.db('summer-school').collection('feedback')
+  const addToClassCollection = client.db('summer-school').collection('addToClass')
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -94,7 +113,7 @@ async function run() {
     })
 
 
-    // users apis
+    // student or user apis
     app.get('/allUsers', async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
@@ -130,6 +149,20 @@ async function run() {
         return res.send('User Already exist')
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+
+    app.post('/student/addToClass', async (req, res) => {
+      const studentAddedClass = req.body;
+      const result = await addToClassCollection.insertOne(studentAddedClass);
+      res.send(result)
+    })
+
+    app.get('/addedClass', async (req, res) => {
+      const email = req.query.email;
+      const filter = { studentEmail: email }
+      const result = await addToClassCollection.findOne(filter);
       res.send(result);
     })
 
