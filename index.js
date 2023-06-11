@@ -47,6 +47,7 @@ async function run() {
   const usersCollection = client.db('summer-school').collection('users')
   const feedbackCollection = client.db('summer-school').collection('feedback')
   const addToClassCollection = client.db('summer-school').collection('addToClass')
+  const paymentCollection = client.db('summer-school').collection('payments')
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
@@ -285,9 +286,6 @@ async function run() {
 
 
 
-
-
-
     app.patch('/user/admin/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -300,6 +298,14 @@ async function run() {
       res.send(result);
     })
 
+
+
+    // payment apis
+    app.post('/create-payment-intent', async(req,res) =>{
+      const paymentInfo = req.body;
+      const result = await paymentCollection.insertMany(paymentInfo);
+      res.send(result)
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
