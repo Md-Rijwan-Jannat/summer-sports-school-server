@@ -236,36 +236,7 @@ async function run() {
       res.send(paymentInfo);
     })
 
-    // app.get('/admin-stats', async (req, res) => {
-    //   const users = await usersCollection.estimatedDocumentCount();
-    //   const classes = await classesCollection.estimatedDocumentCount();
-    //   const orders = await paymentCollection.estimatedDocumentCount();
-
-    //   // best way to get sum of the price field is to use group and sum operator
-    //   /*
-    //     await paymentCollection.aggregate([
-    //       {
-    //         $group: {
-    //           _id: null,
-    //           total: { $sum: '$price' }
-    //         }
-    //       }
-    //     ]).toArray()
-    //   */
-
-    //   const payments = await paymentCollection.find().toArray();
-    //   const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
-
-    //   res.send({
-    //     revenue,
-    //     users,
-    //     classes: classes,
-    //     orders
-    //   })
-    // })
-
-
-    // instructor apis
+    
     app.patch('/user/instructor/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
