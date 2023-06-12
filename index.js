@@ -225,18 +225,31 @@ async function run() {
       res.send({ insertResult, deleteResult });
     })
 
-    app.get('/paymentInfo/:email', async (req, res) => {
+
+    // get payment data or info
+    app.get('/paymentInfo/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const paymentInfo = await paymentCollection.find(query).toArray();
 
-      // const enrolledClass = paymentInfo.map(info => info.classIten)
+      // const enrolledClass = paymentInfo.map(info => info.classItem)
       // const enrolledQuery = {_id: {$in: enrolledClass.map(id => new ObjectId(id))}}
       // const result = await classesCollection.find(enrolledQuery).toArray()
       res.send(paymentInfo);
     })
 
-    
+
+
+    // Define an API endpoint to retrieve enrolled classes based on classItemsId
+    app.get('/enrolled/:email', async (req, res) => {
+      const email = req.params.email;
+      const payments = await paymentCollection.find(email).toArray();
+      console.log(payments)
+      res.send(payments);
+    });
+
+
+
     app.patch('/user/instructor/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
