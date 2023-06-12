@@ -2,6 +2,7 @@ const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')('sk_test_51NEqinCzuPCgzXt0GVedHHv1AhBsVAXRSiXJQb38izQQx0ryX2c3fXPlreAjO4Kzq1VVXJEcvKe88dpNMQw4bofw00RbLkYlYg')
 const app = express();
 require('dotenv').config()
 const port = process.env.PORT || 5000;
@@ -118,7 +119,6 @@ async function run() {
 
     app.get('/addedClass', async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       if (!email) {
         res.send([])
       }
@@ -197,6 +197,72 @@ async function run() {
       res.send(result);
     })
 
+    // stripe payment
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(price, amount);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
+
+
+    // payment related api
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = { _id: { $in: payment.addedItemsId.map(id => new ObjectId(id)) } }
+      const deleteResult = await addToClassCollection.deleteMany(query)
+
+      res.send({ insertResult, deleteResult });
+    })
+
+    app.get('/paymentInfo/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const paymentInfo = await paymentCollection.find(query).toArray();
+
+      // const enrolledClass = paymentInfo.map(info => info.classIten)
+      // const enrolledQuery = {_id: {$in: enrolledClass.map(id => new ObjectId(id))}}
+      // const result = await classesCollection.find(enrolledQuery).toArray()
+      res.send(paymentInfo);
+    })
+
+    // app.get('/admin-stats', async (req, res) => {
+    //   const users = await usersCollection.estimatedDocumentCount();
+    //   const classes = await classesCollection.estimatedDocumentCount();
+    //   const orders = await paymentCollection.estimatedDocumentCount();
+
+    //   // best way to get sum of the price field is to use group and sum operator
+    //   /*
+    //     await paymentCollection.aggregate([
+    //       {
+    //         $group: {
+    //           _id: null,
+    //           total: { $sum: '$price' }
+    //         }
+    //       }
+    //     ]).toArray()
+    //   */
+
+    //   const payments = await paymentCollection.find().toArray();
+    //   const revenue = payments.reduce((sum, payment) => sum + payment.price, 0)
+
+    //   res.send({
+    //     revenue,
+    //     users,
+    //     classes: classes,
+    //     orders
+    //   })
+    // })
 
 
     // instructor apis
@@ -241,8 +307,8 @@ async function run() {
     })
 
 
-    app.get('/single/instructor/:email', verifyJWT, async (req, res) => {
-      const email = req.params.email;
+    app.get('/single/instructor', verifyJWT, async (req, res) => {
+      const email = req.query.email;
 
       if (req.decoded.email !== email) {
         res.send({ instructor: false })
@@ -255,6 +321,8 @@ async function run() {
         res.send(result);
       }
     })
+
+
 
     // admin apis
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
@@ -300,12 +368,7 @@ async function run() {
 
 
 
-    // payment apis
-    app.post('/create-payment-intent', async(req,res) =>{
-      const paymentInfo = req.body;
-      const result = await paymentCollection.insertMany(paymentInfo);
-      res.send(result)
-    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
