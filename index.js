@@ -100,6 +100,7 @@ async function run() {
 
     app.post('/users', async (req, res) => {
       const user = req.body;
+      console.log(user)
       const query = { email: user.email };
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
@@ -245,7 +246,9 @@ async function run() {
       const email = req.params.email;
       const payments = await paymentCollection.find(email).toArray();
       console.log(payments)
-      res.send(payments);
+      const query = {_id: {$in: payments.classItemsId.map(id => new ObjectId(id))}}
+      const result = await classesCollection.find(query).toArray();
+      res.send(result);
     });
 
 
