@@ -242,14 +242,6 @@ async function run() {
 
 
     // Define an API endpoint to retrieve enrolled classes based on classItemsId
-    app.get('/enrolled/:email', async (req, res) => {
-      const email = req.params.email;
-      const payments = await paymentCollection.find(email).toArray();
-      console.log(payments)
-      const query = {_id: {$in: payments.classItemsId.map(id => new ObjectId(id))}}
-      const result = await classesCollection.find(query).toArray();
-      res.send(result);
-    });
 
 
 
