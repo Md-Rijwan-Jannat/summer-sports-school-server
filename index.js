@@ -232,61 +232,54 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const paymentInfo = await paymentCollection.find(query).toArray();
-
-      // const enrolledClass = paymentInfo.map(info => info.classItem)
-      // const enrolledQuery = { _id: { $in: enrolledClass.map(id => new ObjectId(id)) } }
-      // const result = await classesCollection.find(enrolledQuery).toArray()
       res.send(paymentInfo);
     })
 
-    // -------------------------------------------
 
 
     app.get('/enrolled/:email', async (req, res) => {
       try {
         const { email } = req.params;
-
+    
         // Retrieve the enrolled array for the specified email
         const payments = await paymentCollection.find({ email: email }).toArray();
-
-        payments.map(async (payment) => {
-          const classItemIds = payment.classItemsId;
-
-          const enrolledClasses = await classesCollection.find({ _id: { $in: classItemIds.map(id => new ObjectId(id)) } }).toArray();
-          console.log(enrolledClasses)
-        })
-
-        res.json(enrolledClasses);
+    
+        const enrolledArray = await Promise.all(
+          payments.flatMap(async (payment) => {
+            const classItemIds = payment.classItemsId;
+    
+            const enrolledClasses = await classesCollection.find({ _id: { $in: classItemIds.map(id => new ObjectId(id)) } }).toArray();
+    
+            // Update the students count and availableSeats for each enrolled class
+            const updatedEnrolledClasses = await Promise.all(enrolledClasses.map(async (classItem) => {
+              // Update students count
+              const updatedStudentsCount = classItem.students + 1;
+    
+              // Update availableSeats
+              const updatedAvailableSeats = classItem.availableSeats - 1;
+    
+              // Update the class item in the classesCollection
+              await classesCollection.updateOne(
+                { _id: classItem._id },
+                { $set: { students: updatedStudentsCount, availableSeats: updatedAvailableSeats } }
+              );
+    
+              // Return the updated class item
+              return { ...classItem, students: updatedStudentsCount, availableSeats: updatedAvailableSeats };
+            }));
+    
+            // Flatten the updated enrolledClasses array and return as an array of objects
+            return updatedEnrolledClasses.map(classItem => ({ ...classItem }));
+          })
+        );
+    
+        res.json(enrolledArray.flat());
+    
       } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal server error' });
       }
     });
-
-
-
-    app.get('/enrolled-classes/:email', (req, res) => {
-      const { email } = req.params;
-    
-      paymentCollection.find({ email }, (err, payments) => {
-        if (err) {
-          console.error(err);
-          res.status(500).json({ error: 'Internal Server Error' });
-        } else {
-          const classItemIds = payments.flatMap((payment) => payment.classItemsId);
-    
-          classesCollection.find({ _id: { $in: classItemIds.map(id => new ObjectId(id)) } }, (err, classes) => {
-            if (err) {
-              console.error(err);
-              res.status(500).json({ error: 'Internal Server Error' });
-            } else {
-              res.json(classes);
-            }
-          });
-        }
-      });
-    });
-    
     
     // ---------------------------------------------------------------
 
