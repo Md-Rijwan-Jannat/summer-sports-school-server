@@ -47,6 +47,7 @@ async function run() {
   const classesCollection = client.db('summer-school').collection('classes')
   const usersCollection = client.db('summer-school').collection('users')
   const feedbackCollection = client.db('summer-school').collection('feedback')
+  const userFeedbackCollection = client.db('summer-school').collection('userFeedback')
   const addToClassCollection = client.db('summer-school').collection('addToClass')
   const paymentCollection = client.db('summer-school').collection('payments')
   try {
@@ -84,7 +85,7 @@ async function run() {
 
 
     // student or user apis
-    app.get('/allUsers', verifyJWT, async (req, res) => {
+    app.get('/allUsers', async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     })
@@ -183,7 +184,7 @@ async function run() {
     app.get('/allClasses', async (req, res) => {
       const result = await classesCollection
         .find()
-        .sort({ students: -1, _id: -1 })
+        .sort({ students: -1})
         .toArray();
       res.send(result);
     })
@@ -370,6 +371,16 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/userFeedback', async  (req, res) =>{
+      const result = await userFeedbackCollection.find().toArray();
+      res.send(result);
+    })
+
+    app.post('/userFeedback', async (req, res) =>{
+      const newFeedback = req.body;
+      const result = await userFeedbackCollection.insertOne(newFeedback);
+      res.send(result);
+    })
 
 
     app.patch('/user/admin/:id', async (req, res) => {
